@@ -1,6 +1,8 @@
 # HIN
 Hardware Interaction Net (HIN), evaluating Interaction nets in parallel on a new, custom PU
-
+steps:
+- HVM ---COMPILER--> INASM todo!() [CURRENT]
+- INASM --ASSEMBLER--> Machine code todo!()
 
 Current Idea for asm (rough sketch) {
 HVM:
