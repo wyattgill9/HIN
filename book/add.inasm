@@ -1,0 +1,13 @@
+@ADD:
+    NEW    %PLUS_NODE  "+"      ; Create a "+" node
+    LINK   %PLUS_NODE  %A       ; Connect "+" to first argument
+    LINK   %PLUS_NODE  %B       ; Connect "+" to second argument
+    EVAL   %PLUS_NODE           ; Trigger evaluation
+    RETURN %PLUS_NODE           ; Return result
+
+@MAIN:
+    NEW    %A        "3"        ; Create node for 3
+    NEW    %B        "4"        ; Create node for 4
+    CALL   @ADD %A %B           ; Call @ADD with 3 and 4
+
+
