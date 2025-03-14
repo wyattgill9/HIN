@@ -1,70 +1,92 @@
 use std::fs;
-
-fn get_file_content(path: &str) -> std::io::Result<String> {
-    let mut content = fs::read_to_string(path)?;
-    content = content.replace("\n\n", "\\n");
-    content = content.replace("\n", "");
-    content = content.split_whitespace().collect();
-    content = content.replace("\\n", "\n");
-    content = content.replace("\n", " ");
-    let content = " ".to_string() + &content;
-    Ok(content)
-}
+use std::error::Error;
 
 #[derive(Debug, PartialEq)]
 pub struct Function {
-    name: String,
-    parameters: Vec<String>,
-    body: String,
-}
-
-impl Default for Function {
-    fn default() -> Self {
-        Function {
-            name: "".to_string(),
-            parameters: vec!["".to_string()],
-            body: "".to_string()
-        }
-    }
+    pub name: String,
+    pub parameters: Vec<String>,
+    pub output_type: Option<String>,
+    pub body: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Program {
-    functions: Vec<Function>,
+    pub functions: Vec<Function>,
 }
 
-fn parse_funct(content :&str) -> Function {
-    let mut function = Function::default();
-    function.name = content.to_string(); 
-    function
-}
-
-
-fn parse_program(content: &str) -> Vec<Function> {
-    let string_content = content.to_string();
-    let mut functions = vec![];
-    
-    let mut i = 0;
-    while let Some(pos) = string_content[i..].find(" @") {
-        let start = i + pos;
-        let mut end = start + 2;
-
-        while end < string_content.len() && !string_content[end..end + 1].chars().next().unwrap().is_whitespace() {
-            end += 1;
+fn parse_program(input: &str) -> Program {
+    let mut functions = Vec::new();
+    for token in input.split('@').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        if token.contains('{') {
+            functions.push(parse_function_def(token));
+        } else if token.contains('=') {
+            functions.push(parse_function_assignment(token));
+        } else {
+            eprintln!("Unrecognized function definition: {}", token);
         }
-
-        let function = parse_funct(&string_content[start..end]);
-        functions.push(function);
-
-        i = end;
     }
-    functions
+    Program { functions }
 }
 
-fn main() {
-    let add_file_path = "./book/add.hvml";
-    let file_content = get_file_content(&add_file_path).unwrap();
-    println!("{}", file_content);
-    let functions = parse_program(&file_content);
-    println!("{:?}", functions);
+fn parse_function_def(token: &str) -> Function {
+    let token = token.trim();
+
+    let name_end = token.find('(').unwrap_or(token.len());
+    let name = token[..name_end].trim().to_string();
+
+    let param_start = token.find('(').unwrap();
+    let param_end = token.find(')').unwrap();
+    let params_str = &token[param_start + 1..param_end];
+    let parameters: Vec<String> = params_str
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect();
+
+    let mut output_type = None;
+    let mut rest = token[param_end + 1..].trim();
+    if rest.starts_with('~') {
+        if let Some((otype, remaining)) = rest.split_once(' ') {
+            output_type = Some(otype.to_string());
+            rest = remaining.trim();
+        } else {
+            output_type = Some(rest.to_string());
+            rest = "";
+        }
+    }
+
+    let body_start = rest.find('{').unwrap();
+    let body_end = rest.rfind('}').unwrap();
+    let body = rest[body_start + 1..body_end].trim().to_string();
+
+    Function {
+        name,
+        parameters,
+        output_type,
+        body,
+    }
 }
+
+fn parse_function_assignment(token: &str) -> Function {
+    let token = token.trim();
+    let parts: Vec<&str> = token.split('=').collect();
+    let name = parts[0].trim().to_string();
+    let body = parts[1].trim().to_string();
+    Function {
+        name,
+        parameters: Vec::new(),
+        output_type: None,
+        body,
+    }
+}
+
+fn get_file_content(path: &str) -> std::io::Result<String> {
+    fs::read_to_string(path)
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let file_content = get_file_content("./book/add.hvml").unwrap();
+    let program = parse_program(&file_content);
+    println!("{:#?}", program);
+    Ok(())
+}
+
