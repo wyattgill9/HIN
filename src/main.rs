@@ -16,7 +16,7 @@ pub struct Function {
 impl Default for Function {
     fn default() -> Self {
         Function {
-            name: "Main".to_string(),
+            name: "".to_string(),
             parameters: vec!["".to_string()],
             body: "".to_string()
         }
@@ -26,7 +26,6 @@ impl Default for Function {
 #[derive(Debug, PartialEq)]
 pub struct Program {
     functions: Vec<Function>,
-    main: Function,
 }
 
 fn parse_funct(content :&str) -> Function {
@@ -35,14 +34,6 @@ fn parse_funct(content :&str) -> Function {
 
 
 fn parse_program(content: &str) -> String {
-    let parsed_content = content.to_string();
-    for i in parsed_content.chars() {
-        match i {
-            '@' => parse_funct(parsed_content.get(i)),
-            _ => {}
-        }
-    }
-   
     content.to_string()  
 }
 
